@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>We Run This</title>
+    <link href = "bootstrap.css" rel="stylesheet">
+  <link href = "style.css" rel="stylesheet">
+</head>
+<body>
+	<div class = "container row">
+		<header><h1> We Run This</h1>
+		<div class = "col-md-3">
+			<h3>Route List</h3>
+			<ul id = "route-list">
+
+			</ul>
+		</div>
+		<div class = "col-md-9">
+			<div id = "route-form"></div>
+		</div>
+	</div>
+
+</body>
+
+
+
+<!-- templates -->
+<script id="route-view-template" type="text/template">
+	<h2>"<%= name %>"</h2> submitted by <span class = "italic"><%= user %></span> <br/>
+</script>
+<script id="route-item-view-template" type="text/template">
+	<span class = "bold"><a href="#/<%=id%>"><%= name %></a></span>
+</script>
+<script id="header-template" type="text/template">
+	<button id = "new-route-btn">Add New Route</button>
+</script>
+<script id="new-route-form" type="text/template">
+	<form>
+		<h4>Route Details:</h4>
+		<label>Route Name:</label><input id = "route-name-input" type = "text" />
+		<label>Your Name:</label><input id = "user-name-input" type = "text" /><br/>
+		<button class = "add-route-btn">Add to List!</button>
+	</form>
+</script>
+<script id="map-template" type="text/template">
+	<div class="map-container">	
+		<div id = "notice-container"><div id = "notice"></div></div>
+		<div id="map-canvas" class = "map-canvas"></div>
+		<div id = "route-clear-btns">
+			<button onclick = "clearMap();">Clear Run Path</button>
+		</div>
+	</div>	
+</script>
+<script id="geocoder-template" type="text/template">
+	<div id="geocode-input">
+		<label>Change Location:</label>
+		<input id="location-input" type="textbox" value="San Francisco">
+		<input type="button" value="Center Map" onclick="reCenterMap()">
+	</div>
+</script>
+
+<script src="jquery.js"></script>
+<script src="underscore.js"></script>
+<script src="backbone.js"></script>
+<script src="backbone.localStorage.js"></script>
+<script src="bootstrap.min.js"></script>
+<script src="app2.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=drawing&sensor=false"></script>
+
+
+</html>
