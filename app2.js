@@ -2,39 +2,89 @@ $(document).ready(function() {
 
 	var Route = Backbone.Model.extend({
 		defaults: {
+			comments: "(no comments posted)",
 			name: "(no route name entered)",
 			user: "Anonymous",
-			location: "San Francisco"
+			location: "San Francisco",
+			routeMap: null
 		}
 	})
 // route-show view
 	var RouteView = Backbone.View.extend({
 		events: {
-			"click .add-route-btn" : "addNewRoute"
+			"click .add-route-btn" : "addNewRoute",
+			"click #show-instructions-link" : "toggleInstructions",
+			"click #clear-map-btn" : "clearMap",
+			"click #recenter-map-btn" : "reCenterMap"
 		},			
 		addNewRoute: function(event) {
 			event.preventDefault();
-			console.log("addNewRoute");
-			var route = new Route({id: app.routeList.length, name: $("#route-name-input").val(), user: $("#user-name-input").val()});
-			$("#route-name-input").val('');
-			$("#user-name-input").val('');
-			app.routeList.create(route);
+
+			if(this.validateUserInput()) {
+				var id = app.routeList.length;
+				var newMapObject = new RouteMap({id: id, drawnPaths: polylines.slice(), markers: markers.slice()});
+
+				var comments = $('#comments-input').val(); 
+				if (comments.length == 0) {
+					comments = "(no comments posted by user)";
+				}
+
+		        var route = new Route({ name: $('#route-name-input').val(), user: $('#user-name-input').val(),
+		        						 routeMap: newMapObject, id: id, location: $("#location-input").val(), 
+		        							comments: comments});
+
+		        app.routeList.create(route);
+
+		        $("#notice").text("Your route was successfully added to the list.");
+	        	$("#notice").fadeIn(1000).delay(3000).fadeOut(1000);
+
+		        $('#route-name-input').val('');
+		        $('#user-name-input').val('');
+		        $('#comments-input').val('');
+		        this.clearMap();
+		    }
+		    else {
+		    	$("#notice").text("You must fill in all of the route information and there must be a route drawn on the map before submitting.");
+	        	$("#notice").fadeIn(1000).delay(3000).fadeOut(1000);
+		    }
 		},
+		clearMap: clearMap,
+		reCenterMap: reCenterMap,
 		render: function() {
 			this.$el.html(this.templateMap());
 			if(this.model.isNew()) {
-				this.$el.prepend(this.templateGeocoder());
-				this.$el.prepend("<h2>Draw New Route:</h2>");
-				this.$el.append(this.templateNew());
-				console.log('isNew');
+				this.renderNew();
 			}
 			else {
-				this.$el.prepend(this.template(this.model.toJSON()));
+				this.renderOld();
 			}
 			return this;
 		},
+		renderNew: function() {
+			this.$el.prepend(this.templateGeocoder());
+				this.$el.prepend(this.templateInstructions());
+				this.$el.prepend("<h2>Draw New Route:</h2>");
+				this.$el.append(this.templateNew());
+				console.log('isNew');
+		},
+		renderOld: function() {
+			console.log("old");
+			var route = this.model;
+			//show route name and user
+			this.$el.prepend(this.template(route.toJSON()));
+			this.$el.append(this.templateComments(route.toJSON()));
+			console.log("old");
+		},
+		toggleInstructions: function() {
+			$("#draw-instructions").toggleClass('hidden');
+		},
+		validateUserInput: function() {
+			return ($('#route-name-input').val() && $('#user-name-input').val() && markers.length && polylines.length);
+		},
 		template: _.template($("#route-view-template").html()),
+		templateComments: _.template($("#comments-template").html()),
 		templateGeocoder: _.template($("#geocoder-template").html()),
+		templateInstructions: _.template($("#draw-instructions-template").html()),
 		templateMap: _.template($("#map-template").html()),
 		templateNew: _.template($("#new-route-form").html())
 	})
@@ -91,16 +141,25 @@ $(document).ready(function() {
 		},
 		renderRouteView: function(id) {
 			var routeView;
-			if(id == 'new') {
+			var route = this.routeList.get(id);
+			if(route == undefined || id == 'new') {
 				routeView = new RouteView({model: new Route()});
 				console.log('new');	
+				$("#route-form").html(routeView.render().el);
+				mapInitialize('map-canvas');	
+				$('#clear-map-btn').css('display', 'inline-block');	
 			}
 			else {
-				routeView = new RouteView({model: this.routeList.get(id)});
+				routeView = new RouteView({model: route});
 				console.log('old');
+
+				$("#route-form").html(routeView.render().el);
+				
+				//create mapObject for route
+				var mapObject = route.get('routeMap');
+				newMap('map-canvas', mapObject.get('drawnPaths'), mapObject.get('markers'));
 			}
-			$("#route-form").html(routeView.render().el);
-			mapInitialize('map-canvas');
+			
 		}
 	})
 
@@ -139,7 +198,8 @@ function mapInitialize(id) {
 	var mapOptions = {
 	    zoom: 13,
 	    center: new google.maps.LatLng(37.7833, -122.4167),
-	    mapTypeId: google.maps.MapTypeId.ROADMAP
+	    mapTypeId: google.maps.MapTypeId.ROADMAP,
+	    mapTypeControlOptions: {position: google.maps.ControlPosition.RIGHT_BOTTOM}
 	  };
 	map = new google.maps.Map(document.getElementById(id), mapOptions);
 	  //console.log(map.controls);
